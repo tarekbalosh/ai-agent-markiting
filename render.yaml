@@ -1,0 +1,57 @@
+# ===================================================
+# Render.com - Backend Deployment Configuration
+# CoreLogic AI Marketing Agent - Node.js Worker
+# ===================================================
+
+# خدمة الخادم الرئيسي (Background Worker لضمان تشغيل Cron Jobs)
+services:
+  # ===================================
+  # Backend API + Cron Jobs
+  # ===================================
+  - type: worker          # Worker وليس web لضمان عدم النوم!
+    name: corelogic-agent-worker
+    env: node
+    region: frankfurt     # أقرب منطقة للشرق الأوسط
+    plan: starter         # $7/شهر - لا ينام أبداً
+    buildCommand: |
+      cd backend
+      npm install
+      npm run prisma:generate
+      npm run build
+      npm run db:push
+    startCommand: cd backend && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false       # سيتم تحديده في Render Dashboard
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: LINKEDIN_ACCESS_TOKEN
+        sync: false
+      - key: LINKEDIN_PERSON_URN
+        sync: false
+      - key: LINKEDIN_ORGANIZATION_URN
+        sync: false
+      - key: FROM_EMAIL
+        value: agent@corelogic-systems.com
+      - key: PORT
+        value: "3001"
+      - key: ALLOWED_ORIGINS
+        sync: false       # رابط Vercel Dashboard
+
+  # ===================================
+  # PostgreSQL Database (خيار بديل لـ SQLite)
+  # ===================================
+  - type: pserv
+    name: corelogic-postgres
+    env: postgres
+    region: frankfurt
+    plan: starter         # $7/شهر
+
+databases:
+  - name: corelogic-db
+    databaseName: corelogic_agent
+    user: corelogic

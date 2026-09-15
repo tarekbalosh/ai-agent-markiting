@@ -1,0 +1,179 @@
+// ===================================================
+// CoreLogic Systems - AI Marketing Agent
+// Prisma Schema - قاعدة بيانات الوكيل التسويقي
+// ملاحظة: يستخدم SQLite (String بدلاً من Enum)
+// ===================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===================================================
+// 1. CampaignConfig: الإعدادات العامة للحملة التسويقية
+// ===================================================
+model CampaignConfig {
+  id              String   @id @default(cuid())
+  name            String
+  isActive        Boolean  @default(true)
+
+  companyName     String   @default("CoreLogic Systems")
+  companyBio      String
+  targetAudience  String
+  campaignGoal    String
+  toneOfVoice     String   @default("Professional, Tech-forward, Arabic")
+  keyMessages     String
+  competitors     String?
+  uniqueSellingPoints String
+
+  maxDailyPosts   Int      @default(2)
+  maxDailyEmails  Int      @default(50)
+  preferredPostTime String @default("09:00")
+  preferredEmailTime String @default("10:00")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  agentTasks       AgentTask[]
+  generatedContent GeneratedContent[]
+
+  @@map("campaign_config")
+}
+
+// ===================================================
+// 2. AgentTask: مهام الوكيل المجدولة
+// TaskType: GENERATE_DAILY_PLAN | GENERATE_CONTENT | PUBLISH_LINKEDIN | SEND_EMAIL | ANALYZE_PERFORMANCE | REFRESH_TOKENS
+// TaskStatus: PENDING | RUNNING | COMPLETED | FAILED | CANCELLED | SKIPPED
+// ===================================================
+model AgentTask {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    CampaignConfig @relation(fields: [campaignId], references: [id])
+
+  taskType    String   // TaskType enum values as String
+  status      String   @default("PENDING") // TaskStatus
+  priority    Int      @default(5)
+
+  title       String
+  description String?
+  payload     String?  // JSON string
+
+  scheduledAt DateTime
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  result      String?  // JSON string
+  errorMessage String?
+  retryCount  Int      @default(0)
+  maxRetries  Int      @default(3)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  generatedContent GeneratedContent[]
+  activityLogs     ActivityLog[]
+
+  @@map("agent_task")
+}
+
+// ===================================================
+// 3. GeneratedContent: المحتوى المولد
+// ContentType: LINKEDIN_POST | COLD_EMAIL | TWITTER_POST | BLOG_POST | NEWSLETTER
+// ContentStatus: DRAFT | APPROVED | SCHEDULED | PUBLISHED | FAILED | ARCHIVED
+// ===================================================
+model GeneratedContent {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    CampaignConfig @relation(fields: [campaignId], references: [id])
+  taskId      String?
+  task        AgentTask? @relation(fields: [taskId], references: [id])
+
+  contentType String   // ContentType
+  status      String   @default("DRAFT") // ContentStatus
+
+  title       String?
+  body        String
+  subject     String?
+  hashtags    String?
+  callToAction String?
+
+  targetPlatform  String?
+  targetAudience  String?
+  aiModel         String   @default("gemini-1.5-pro")
+  aiPromptUsed    String?
+
+  scheduledAt  DateTime?
+  publishedAt  DateTime?
+  publishedUrl String?
+
+  impressions  Int?
+  clicks       Int?
+  engagements  Int?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("generated_content")
+}
+
+// ===================================================
+// 4. PlatformIntegration: توكنات المنصات الخارجية
+// Platform: LINKEDIN | TWITTER | EMAIL_SMTP | EMAIL_RESEND | HUBSPOT
+// ===================================================
+model PlatformIntegration {
+  id             String   @id @default(cuid())
+  platform       String   // Platform enum values
+  name           String
+  isActive       Boolean  @default(true)
+
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+
+  accountId   String?
+  accountName String?
+  config      String?  // JSON string
+
+  lastTestedAt   DateTime?
+  lastSuccessAt  DateTime?
+  errorCount     Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([platform, accountId])
+  @@map("platform_integration")
+}
+
+// ===================================================
+// 5. ActivityLog: سجل كامل لكل حركة يقوم بها الوكيل
+// LogEventType: AGENT_WAKE_UP | PLAN_GENERATED | CONTENT_GENERATED | CONTENT_PUBLISHED | EMAIL_SENT | TASK_STARTED | TASK_COMPLETED | TASK_FAILED | ERROR | INFO | API_CALL
+// LogLevel: DEBUG | INFO | WARN | ERROR | CRITICAL
+// ===================================================
+model ActivityLog {
+  id       String   @id @default(cuid())
+  taskId   String?
+  task     AgentTask? @relation(fields: [taskId], references: [id])
+
+  eventType  String  // LogEventType
+  level      String  @default("INFO") // LogLevel
+  message    String
+
+  details    String?  // JSON string
+  module     String?
+  action     String?
+  entityType String?
+  entityId   String?
+
+  durationMs  Int?
+  errorCode   String?
+  stackTrace  String?
+
+  createdAt   DateTime @default(now())
+
+  @@map("activity_log")
+}
