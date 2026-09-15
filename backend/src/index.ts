@@ -279,10 +279,36 @@ app.get("/api/stats", async (_req: Request, res: Response) => {
 // بدء تشغيل الخادم
 // -------------------------------------------------------
 async function main() {
-  // التحقق من الاتصال بقاعدة البيانات
+  // التحقق من الاتصال بقاعدة البيانات وتهيئة البيانات
   try {
     await prisma.$connect();
     console.log("✅ تم الاتصال بقاعدة البيانات بنجاح");
+    
+    // Auto-seed if database is empty
+    const campaignCount = await prisma.campaignConfig.count();
+    if (campaignCount === 0) {
+      console.log("🌱 لا توجد حملات تسويقية. يتم تهيئة البيانات الأولية (Seed)...");
+      await prisma.campaignConfig.create({
+        data: {
+          id: "seed-campaign-001",
+          name: "حملة Q4 2026 - أتمتة الأعمال",
+          isActive: true,
+          companyName: "CoreLogic Systems",
+          companyBio: "CoreLogic Systems هي شركة برمجيات سعودية رائدة متخصصة في بناء أنظمة أتمتة الأعمال وحلول ERP والذكاء الاصطناعي للمؤسسات والشركات المتوسطة.",
+          targetAudience: "مدراء تقنية المعلومات (CTO/CIO) ومدراء العمليات في الشركات المتوسطة والكبيرة في السعودية والخليج العربي، مع تركيز على قطاعات: التصنيع، والتجزئة، والخدمات اللوجستية",
+          campaignGoal: "توليد 50 عميل محتمل (Lead) شهرياً مهتمين بشراء نظام أتمتة الأعمال CoreLogic ERP. التركيز على الشركات ذات أكثر من 50 موظفاً",
+          toneOfVoice: "مهني وخبير، يتحدث لغة رجال الأعمال، يركز على القيمة والعائد على الاستثمار (ROI)، عربي فصيح مع مصطلحات تقنية إنجليزية مقبولة",
+          keyMessages: "وفّر 40% من وقت فريقك مع أتمتة CoreLogic | قرارات أذكى مبنية على بيانات حقيقية في الوقت الفعلي | تكامل سلس مع أنظمتك الحالية خلال أسبوعين فقط | دعم تقني 24/7 باللغة العربية",
+          competitors: "SAP Business One, Microsoft Dynamics 365, Oracle NetSuite, Odoo",
+          uniqueSellingPoints: "الوحيد المصمم خصيصاً للشركات العربية | تكلفة أقل بـ 60% من SAP | تطبيق خلال أسبوعين (مقارنة بـ 6 أشهر للمنافسين) | واجهة عربية كاملة مع دعم اللغة العربية في التقارير | استضافة على سيرفرات سعودية لضمان سيادة البيانات",
+          maxDailyPosts: 2,
+          maxDailyEmails: 30,
+          preferredPostTime: "09:00",
+          preferredEmailTime: "10:00",
+        }
+      });
+      console.log("✅ تم حقن الحملة التسويقية الأساسية بنجاح.");
+    }
   } catch (error) {
     console.error("❌ فشل الاتصال بقاعدة البيانات:", error);
     process.exit(1);
