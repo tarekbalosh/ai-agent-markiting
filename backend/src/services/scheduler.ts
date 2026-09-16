@@ -57,7 +57,7 @@ async function runContentGenerationJob() {
 // -------------------------------------------------------
 // 🕛 Cron Job 2: 12:00 ظهراً - النشر التلقائي
 // -------------------------------------------------------
-async function runPublishingJob() {
+async function runPublishingJob(ignoreSchedule: boolean = false) {
   console.log("\n⏰ ================================");
   console.log("⏰ [Scheduler] 12:00 ظ - بدء مهمة النشر التلقائي");
   console.log("⏰ ================================\n");
@@ -71,9 +71,7 @@ async function runPublishingJob() {
     const contentToPublish = await prisma.generatedContent.findMany({
       where: {
         status: ContentStatus.APPROVED,
-        scheduledAt: {
-          lte: new Date(),
-        },
+        ...(ignoreSchedule ? {} : { scheduledAt: { lte: new Date() } }),
       },
       orderBy: { scheduledAt: "asc" },
     });
@@ -258,6 +256,6 @@ export async function triggerManualContentGeneration() {
 }
 
 export async function triggerManualPublishing() {
-  console.log("🔧 [Scheduler] تشغيل يدوي: النشر...");
-  await runPublishingJob();
+  console.log("🔧 [Scheduler] تشغيل يدوي: النشر (تجاهل وقت الجدولة)...");
+  await runPublishingJob(true);
 }
