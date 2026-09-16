@@ -18,8 +18,10 @@ import { CampaignConfig } from "@prisma/client";
 // -------------------------------------------------------
 // تهيئة Gemini AI
 // -------------------------------------------------------
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+function getModel() {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+  return genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+}
 
 // -------------------------------------------------------
 // الأنواع المساعدة
@@ -138,6 +140,7 @@ ${campaign.competitors ? `- المنافسون: ${campaign.competitors}` : ""}
 }
 `;
 
+  const model = getModel();
   const result = await model.generateContent(planningPrompt);
   const responseText = result.response.text();
 
@@ -204,6 +207,7 @@ ${contentTitle}
 }
 `;
 
+  const model = getModel();
   const result = await model.generateContent(prompt);
   const responseText = result.response.text();
   const jsonMatch = responseText.match(/\{[\s\S]*\}/);
@@ -266,6 +270,7 @@ ${contentTitle}
 }
 `;
 
+  const model = getModel();
   const result = await model.generateContent(prompt);
   const responseText = result.response.text();
   const jsonMatch = responseText.match(/\{[\s\S]*\}/);
